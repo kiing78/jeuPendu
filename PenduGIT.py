@@ -11,11 +11,27 @@
 
 
 import easygui
+import random
 
-def pendu():
+
+
+liste = [
+    [1, 1, ['FOOTBALL', 'TENNIS', 'BASKET']],
+    [1, 2, ['PETANQUE', 'AEROBIQUE', 'LUGE']],
+    [2, 1, ['PARIS', 'LYON', 'MARSEILLE']],
+    [2, 2, ['MELUN', 'EVRY', 'TARBES']],
+    [3, 1, ['MICKEY', 'DONALD', 'PLUTO']],
+    [3, 2, ['PICSOU', 'DINGO', 'MINNIE']],
+]
+
+def pendu(liste):
     '''Lance le pendu'''
     lettresProposées = []
-    word=input("Renseignez le mot à deviner").upper()
+    theme = input("Choisissez un thème \n 1 = sport \n 2 = ville \n 3 = disney : ")
+    niveau = input("Choisissez un niveau \n 1 = facile \n 2 = difficile : ")
+    selection =list(filter(lambda p : p[1] == int(niveau),list(filter(lambda p : p[0] == int(theme), liste))))[0][2]
+    print("selection : ", selection)
+    word=selection[random.randint(0, len(selection)-1)]
     secret = []
     global pénalité
     pénalité = 0
@@ -66,7 +82,6 @@ def pendu():
 
 
     def victoire():
-        ## 1 passage de trop
         victoire = False
         if secret.count("_") == 0:
             victoire = True
@@ -94,5 +109,4 @@ def pendu():
         win = victoire()
         lost = defaite()
 
-
-pendu()
+pendu(liste)
