@@ -112,15 +112,24 @@ def victoire():
 
 def defaite():
     ## Vérifie si le compteur de pénalité a atteint le max et passe le booléen de défaite à True le cas échéant
+    global secret
     defaite = False
     if pénalité == 5:
         defaite = True
+        secret = word
+        secretFrame.destroy()
+        creationSecretFrame()
+        secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
+        secretLabel.pack()
+        secretFrame.pack(side = BOTTOM, pady=20)
         print("Dommage, vous avez perdu")
         easygui.msgbox(f"{word}\nDommage, vous avez perdu", "Le Pendu", "Ok !")
     return defaite
 
 def chercheLettre(n):
     ## Vérifie si la lettre renseignée est dans le mot, l'ajoute dans le tableau de lettres proposées incrémmente le compteur de pénalité le cas échéant
+    # ----- Etape 17 = Vérification de la lettre sélectionnée -----
+    print('# ----- Etape 17 = Vérification de la lettre sélectionnée -----')
     print('welcome in chercheLettre : ', n)
     global pénalité, lettresProposées, secret, secretFrame
     lettre=n
@@ -147,10 +156,12 @@ def chercheLettre(n):
         if (not letterIsInclude):
             print("La lettre n'est pas incluse")
             pénalité = pénalité + 1
+            defaite()
             return messageErreur, pénalité
         else:
             print("La lettre est incluse")
             secret = afficheMotSecret()
+            victoire()
             print('secretFrame : ', secretFrame)
             try:
                 secretFrame.destroy()
@@ -207,12 +218,13 @@ def chercheMotDansDatabase():
 ## ----- Fenetre de jeu -----
 
 def creationClavier():
+    ## Création de la frame et des boutons du clavier
     global clavierFrame, current_lettre
     # ----- Etape 15A = Création de la frame clavier -----
-    print('# ----- Etape 15 = Création de la frame clavier et du clavier -----')
+    print('# ----- Etape 15A = Création de la frame clavier -----')
     clavierFrame = Frame (mainFenetre, bg = "#dedede")
     # ----- Etape 15B = Création du clavier -----
-    print('# ----- Etape 15 = Création de la frame clavier et du clavier -----')
+    print('# ----- Etape 15B = Création du clavier -----')
     clavierLigne1 = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"]
     clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
     clavierLigne3 = ["W", "X", "C", "V", "B", "N"]
@@ -235,6 +247,8 @@ def creationClavier():
     clavierFrame.grid_columnconfigure(9, weight=1)
 
 def creationSecretFrame():
+    # ----- Etape 14 = creation de la frame mot secret -----
+    print('# ----- Etape 14 = creation de la frame mot secret -----')
     global secretFrame
     secretFrame = Frame(mainFenetre, bg = "#dedede")
 
@@ -363,6 +377,7 @@ def afficheTheme():
 
 def afficheMotSecret():
     ## Affiche le mot mystère sous forme de "_" ou de lettres en lien avec le tableau de lettres proposées
+    print('# ----- Etape 10A = transformation du mot en _ _ _ -----')
     global lettresProposées
     secret = ""
     for i in range(len(word)):
