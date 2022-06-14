@@ -122,7 +122,7 @@ def defaite():
 def chercheLettre(n):
     ## Vérifie si la lettre renseignée est dans le mot, l'ajoute dans le tableau de lettres proposées incrémmente le compteur de pénalité le cas échéant
     print('welcome in chercheLettre : ', n)
-    global pénalité, lettresProposées, secret, secretLabel
+    global pénalité, lettresProposées, secret, secretFrame
     lettre=n
     messageErreur = ""
     pénalité = pénalité
@@ -151,10 +151,12 @@ def chercheLettre(n):
         else:
             print("La lettre est incluse")
             secret = afficheMotSecret()
+            print('secretFrame : ', secretFrame)
             try:
-                secretLabel.destroy()
+                secretFrame.destroy()
             except:
                 pass
+            creationSecretFrame()
             secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
             secretLabel.pack()
             secretFrame.pack(side = BOTTOM, pady=20)
