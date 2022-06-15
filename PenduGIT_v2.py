@@ -26,6 +26,7 @@ win = False
 lost = False
 theme = ""
 dataMot = []
+message = ""
 
 
 ## ----- Création de la fênetre de jeu -----
@@ -102,20 +103,26 @@ def pendu():
 
 def victoire():
     ## Vérifie si toutes les lettres du mot mystère ont été trouvées et passe le booléen de victoire à True le cas échéant
+    global message
     victoire = False
     if secret.count("_") == 0:
         victoire = True
         print("Bravo vous avez gagné")
+        messageFrame.destroy()
+        message = "Bravo vous avez gagné"
+        creationMessageFrame()
         ## msgbox ("Bravo, vous avez gagné", title = "pendu")
-        easygui.msgbox(f"{word}\nBravo, vous avez gagné", "Le Pendu", "Ok !")
     return victoire
 
 def defaite():
     ## Vérifie si le compteur de pénalité a atteint le max et passe le booléen de défaite à True le cas échéant
-    global secret
+    global secret, message
     defaite = False
     if pénalité == 5:
         defaite = True
+        messageFrame.destroy()
+        message = "Dommage vous avez perdu"
+        creationMessageFrame()
         secret = word
         secretFrame.destroy()
         creationSecretFrame()
@@ -123,7 +130,6 @@ def defaite():
         secretLabel.pack()
         secretFrame.pack(side = BOTTOM, pady=20)
         print("Dommage, vous avez perdu")
-        easygui.msgbox(f"{word}\nDommage, vous avez perdu", "Le Pendu", "Ok !")
     return defaite
 
 def chercheLettre(n):
@@ -173,7 +179,7 @@ def chercheLettre(n):
             secretFrame.pack(side = BOTTOM, pady=20)
 
 def rejouer():
-    global word, pénalité, lettresProposées
+    global word, pénalité, lettresProposées, message
     pénalité = 0
     lettresProposées = []
     word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
@@ -182,12 +188,16 @@ def rejouer():
         secretFrame.destroy()
     except:
         pass
+    messageFrame.destroy()
+    message = ""
+    creationMessageFrame()
     creationSecretFrame()
     secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
     secretLabel.pack()
     secretFrame.pack(side = BOTTOM, pady=20)
 
 def menu():
+    ## Réinitialise toutes les variables relatives au jeu, supprime les frames relatives au jeu et "recharge" les frames relatives au menu
     global word, pénalité, lettresProposées, theme, niveau
     word = ""
     pénalité = 0
@@ -195,6 +205,7 @@ def menu():
     theme = ""
     niveau = ""
     secretFrame.destroy()
+    messageFrame.destroy()
     clavierFrame.destroy()
     boutonsFrame.destroy()
     creationThemeFrame()
@@ -332,11 +343,20 @@ def motMystere():
     # ----- Etape 15C = Affichage de la frame Clavier -----
     print('# ----- Etape 15C = Affichage de la frame Clavier -----')
     clavierFrame.pack(side = BOTTOM, pady=20)
+    print('# ----- Création et affichage de la frame Message')
+    creationMessageFrame()
     # ----- Etape 16 = Création et affichage  de la frame mot secret -----
     print('# ----- Etape 16 = Création et affichage  de la frame mot secret -----')
     secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
     secretLabel.pack()
     secretFrame.pack(side = BOTTOM, pady=20)
+
+def creationMessageFrame():
+    global message, messageFrame
+    messageFrame = Frame(mainFenetre, bg = "#dedede")
+    messageFrame.pack(side=BOTTOM)
+    messageLabel = Label(messageFrame, text=message,  bg = "#dedede")
+    messageLabel.pack()
 
 
 
