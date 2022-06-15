@@ -172,7 +172,34 @@ def chercheLettre(n):
             secretLabel.pack()
             secretFrame.pack(side = BOTTOM, pady=20)
 
+def rejouer():
+    global word, pénalité, lettresProposées
+    pénalité = 0
+    lettresProposées = []
+    word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
+    secret = afficheMotSecret()
+    try:
+        secretFrame.destroy()
+    except:
+        pass
+    creationSecretFrame()
+    secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
+    secretLabel.pack()
+    secretFrame.pack(side = BOTTOM, pady=20)
 
+def menu():
+    global word, pénalité, lettresProposées, theme, niveau
+    word = ""
+    pénalité = 0
+    lettresProposées = []
+    theme = ""
+    niveau = ""
+    secretFrame.destroy()
+    clavierFrame.destroy()
+    boutonsFrame.destroy()
+    creationThemeFrame()
+    chercheThemeDansDatabase()
+    afficheTheme()
 
 ## ----- Connexion database -----
 
@@ -252,6 +279,26 @@ def creationSecretFrame():
     global secretFrame
     secretFrame = Frame(mainFenetre, bg = "#dedede")
 
+def creationBoutonsFrame():
+    # ----- Etape 14.2 = creation de la frame Boutons qui contiendra les boutons MENU et REJOUER ainsi que ces boutons -----
+    print('# ----- Etape 14.2 = creation de la frame mot secret -----')
+    global boutonsFrame
+    boutonsFrame = Frame(mainFenetre, bg = "#dedede")
+    boutonsFrame.pack(side=BOTTOM, fill=X)
+
+    frameMenu=Frame(boutonsFrame)
+    frameRejouer=Frame(boutonsFrame)
+
+    frameMenu.pack(side=LEFT, fill=X, expand=True,)
+    frameRejouer.pack(side=RIGHT, fill=X, expand=True,)
+
+    boutonMenu = Button(frameMenu, text="MENU", command=menu)
+    boutonRejouer = Button(frameRejouer, text="REJOUER", command=rejouer)
+    boutonMenu.pack(fill=X)
+    boutonRejouer.pack(fill=X)
+
+
+
 def motMystere():
     ## Récupère la liste de mots correspondant au niveau sélectionné et selectionne 1 de celui-ci comme mot mystère
     # ----- Etape 9 = Recherche des mots correspondants au niveau dans la dataBase -----
@@ -273,6 +320,9 @@ def motMystere():
     # ----- Etape 13 = Suppression de la frame theme -----
     print('# ----- Etape 13 = Suppression de la frame theme -----')
     themeFrame.destroy()
+    # ----- Etape 14.1 = creation de la frame Boutons -----
+    print('# ----- Etape 14.1 = creation de la frame Boutons -----')
+    creationBoutonsFrame()
     # ----- Etape 14 = creation de la frame mot secret -----
     print('# ----- Etape 14 = creation de la frame mot secret -----')
     creationSecretFrame()
