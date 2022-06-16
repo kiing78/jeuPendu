@@ -27,76 +27,19 @@ lost = False
 theme = ""
 dataMot = []
 message = ""
+databaseUsername= "emmanuel"
+databaseMdp= "Tournevis@00"
 
 
-## ----- Création de la fênetre de jeu -----
-
-## ----- Connexion à la database pour récupérer les thèmes et niveaux disponibles -----
 
 ## ----- Définition des fonctions qui lancent le jeu -----
 def pendu():
     ## Lance le pendu
-     ## Définition des variables
-      # Variables Globales qui seront appelées et modifiées dans des fonctions
-
-      # Variables locales -dans la fonction pendu()- qui ne seront pas modifiées dans les fonctions
-
-
     creationMainFenetre()
     creationThemeFrame()
     chercheThemeDansDatabase()
     afficheTheme()
-    #creationNiveauFrame()
-    #chercheNiveauDansDatabase()
-
-    '''
-    def boutonPlay():
-        ## Affiche un bouton PLAY fois le thème choisi pour déterminer le mot choisi
-        global boutonPlayFrame
-        boutonPlayFrame.destroy()
-        boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
-        boutonPlayFrame.pack(side = BOTTOM, pady=50)
-        global boutonPlay
-        boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = "#dedede", command=motMystere)
-        boutonPlay.pack()
-    '''
-    '''
-    def choixNiveau():
-        ## Propose les niveaux correspondant au thème selectionné
-          # Connexion à la database pour récupérer les thèmes
-
-          # Destruction de la frame niveau au cas où l'utilisateur change de thème
-        global mainFenetre
-        global niveauFrame
-        niveauFrame.destroy()
-        global niveau
-          # Sélectionne par défaut le premier niveau du thème sélectionné
-        niveau = StringVar(value=vwniveau[0][0])
-          #Création et affichage de la frame niveau
-        niveauFrame = Frame (mainFenetre)
-    '''
-
-
-
-    #Création et affichage de la frame thème
-
-
     mainFenetre.mainloop()
-
-
-'''
-    while (win == False and lost == False):
-        ## Tant que le joueur n'a ni gagné, ni perdu, la boucle demande des lettres à l'utilisateur, vérifie si elle est contenue dans le mot mystère et les condition de victoire et défaite
-        secret = afficheMotSecret()
-        messageErreur, pénalité = chercheLettre()
-        if messageErreur != "":
-            easygui.msgbox(f"{messageErreur}")
-            messageErreur = ""
-        secret = afficheMotSecret()
-        win = victoire()
-        lost = defaite()
-
-'''
 
 
 ## ----- Fonctions Liées au jeu -----
@@ -159,6 +102,7 @@ def chercheLettre(n):
         print("pas d'erreur")
         letterIsInclude = lettre in word
         lettresProposées.append(lettre)
+        updateClavier()
         if (not letterIsInclude):
             print("La lettre n'est pas incluse")
             pénalité = pénalité + 1
@@ -179,11 +123,14 @@ def chercheLettre(n):
             secretFrame.pack(side = BOTTOM, pady=20)
 
 def rejouer():
-    global word, pénalité, lettresProposées, message
+    global word, pénalité, lettresProposées, message, secret
     pénalité = 0
     lettresProposées = []
     word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
     secret = afficheMotSecret()
+    message = ""
+    updateClavier()
+    '''
     try:
         secretFrame.destroy()
     except:
@@ -195,7 +142,7 @@ def rejouer():
     secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
     secretLabel.pack()
     secretFrame.pack(side = BOTTOM, pady=20)
-
+    '''
 def menu():
     ## Réinitialise toutes les variables relatives au jeu, supprime les frames relatives au jeu et "recharge" les frames relatives au menu
     global word, pénalité, lettresProposées, theme, niveau
@@ -219,7 +166,7 @@ def chercheThemeDansDatabase():
     # ----- Etape 3 = Recherche des thèmes dans la database -----
     print('# ----- Etape 3 = Recherche des thèmes dans la database -----')
     global vwtheme
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
     ## Execution des requêtes et enregistrement du resultat dans des variables
     crs.execute('select * from tb_theme;')
@@ -233,7 +180,7 @@ def chercheNiveauDansDatabase():
     print('# ----- Etape 5A = Recherche des niveaux dans la database -----')
     global theme, vwniveau
     t = theme.get()
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
     crs.execute(f'select * from fx_niveau({t});')
     vwniveau = crs.fetchall()
@@ -244,7 +191,7 @@ def chercheMotDansDatabase():
      # ----- Etape 9A = Recherche des mots correspondants au niveau dans la dataBase -----
     print('# ----- Etape 9A = Recherche des mots correspondants au niveau dans la dataBase -----')
     global dataMot
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
     crs.execute(f'select * from fx_mot2({niveau.get()});')
     dataMot = crs.fetchall()
@@ -257,7 +204,7 @@ def chercheMotDansDatabase():
 
 def creationClavier():
     ## Création de la frame et des boutons du clavier
-    global clavierFrame, current_lettre
+    global clavierFrame, current_lettre, lettresProposées
     # ----- Etape 15A = Création de la frame clavier -----
     print('# ----- Etape 15A = Création de la frame clavier -----')
     clavierFrame = Frame (mainFenetre, bg = "#dedede")
@@ -266,13 +213,26 @@ def creationClavier():
     clavierLigne1 = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"]
     clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
     clavierLigne3 = ["W", "X", "C", "V", "B", "N"]
-    current_lettre=()
+    #current_lettre=()
+
     for lettre in clavierLigne1:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=0, column=clavierLigne1.index(lettre))
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable").grid(row=0, column=clavierLigne1.index(lettre))
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=0, column=clavierLigne1.index(lettre))
     for lettre in clavierLigne2:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=1, column=clavierLigne2.index(lettre))
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable").grid(row=1, column=clavierLigne2.index(lettre))
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=1, column=clavierLigne2.index(lettre))
     for lettre in clavierLigne3:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=2, column=clavierLigne3.index(lettre)+2)
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable").grid(row=2, column=clavierLigne3.index(lettre)+2)
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=2, column=clavierLigne3.index(lettre)+2)
+
+
+
     clavierFrame.grid_columnconfigure(0, weight=1)
     clavierFrame.grid_columnconfigure(1, weight=1)
     clavierFrame.grid_columnconfigure(2, weight=1)
@@ -357,6 +317,20 @@ def creationMessageFrame():
     messageFrame.pack(side=BOTTOM)
     messageLabel = Label(messageFrame, text=message,  bg = "#dedede")
     messageLabel.pack()
+
+def updateClavier():
+    global clavierFrame, messageFrame, secretFrame
+    clavierFrame.destroy()
+    messageFrame.destroy()
+    secretFrame.destroy()
+    creationClavier()
+    creationSecretFrame()
+    clavierFrame.pack(side = BOTTOM, pady=20)
+    creationMessageFrame()
+    secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
+    secretLabel.pack()
+    secretFrame.pack(side = BOTTOM, pady=20)
+
 
 
 
