@@ -49,10 +49,10 @@ def victoire():
     victoire = False
     if secret.count("_") == 0:
         victoire = True
-        messageFrame.destroy()
         message = "Bravo vous avez gagné"
-        creationMessageFrame()
-    return victoire
+        updateMessage()
+
+
 
 def defaite():
     ## Retourne un booleen correspondant au statut de défaite
@@ -61,45 +61,49 @@ def defaite():
     defaite = False
     if pénalité == 5:
         defaite = True
-        messageFrame.destroy()
         message = "Dommage vous avez perdu"
-        creationMessageFrame()
+        updateMessage()
         secret = word
-        secretFrame.destroy()
-        creationSecretFrame()
+        #secretFrame.destroy()
+        #creationSecretFrame()
+        updateMotMystere()
 
 
-    return defaite
+
+def verifLettreValid(event):
+    global message
+    if len(event.char.upper()) != 1:
+        message = "Veuillez renseigner 1 et une seule lettre"
+        updateMessage()
+    elif ord(event.char.upper().upper())<65 or ord(event.char.upper().upper())>90:
+        message = "Veuillez renseigner une lettre entre A et Z"
+        updateMessage()
+    elif event.char.upper() in lettresProposées:
+        message = "Vous avez déja proposé cette lettre"
+        updateMessage()
+    else:
+        chercheLettre(event.char.upper())
+
 
 def chercheLettre(n):
     ## Vérifie si la lettre renseignée est dans le mot, l'ajoute dans le tableau de lettres proposées incrémmente le compteur de pénalité le cas échéant
-    global pénalité, lettresProposées, secret, secretFrame
+    global pénalité, lettresProposées, secret, secretFrame, message
     lettre=n
-    messageErreur = ""
+    message = ""
     pénalité = pénalité
+    updateMessage()
     # Vérifie les erreurs de proposition de lettre
-    if len(lettre) != 1:
-        messageErreur = "Veuillez renseigner 1 et une seule lettre"
-        return messageErreur, pénalité
-    elif ord(lettre.upper())<65 or ord(lettre.upper())>90:
-        messageErreur = "Veuillez renseigner une lettre entre A et Z"
-        return messageErreur, pénalité
-    elif lettre in lettresProposées:
-        messageErreur = "Vous avez déja proposé cette lettre"
-        return messageErreur, pénalité
+    letterIsInclude = lettre in word
+    lettresProposées.append(lettre)
+    updateClavier()
+    if (not letterIsInclude):
+        pénalité = pénalité + 1
+        defaite()
     else:
-        letterIsInclude = lettre in word
-        lettresProposées.append(lettre)
-        updateClavier()
-        if (not letterIsInclude):
-            pénalité = pénalité + 1
-            defaite()
-            return messageErreur, pénalité
-        else:
-            secret = afficheMotSecret()
-            victoire()
-            secretFrame.destroy()
-            creationSecretFrame()
+        secret = afficheMotSecret()
+        victoire()
+        secretFrame.destroy()
+        creationSecretFrame()
 
 
 def rejouer():
@@ -358,6 +362,7 @@ def creationClavier():
     ## Création de la frame et des boutons du clavier
     global clavierFrame, lettresProposées
     clavierFrame = Frame (superFrameClavier, bg = bgColor)
+    clavierFrame.bind_all("<Key>", verifLettreValid)
     clavierFrame.pack(side = BOTTOM, pady=20)
     clavierLigne1 = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"]
     clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
@@ -390,6 +395,7 @@ def creationClavier():
     clavierFrame.grid_columnconfigure(7, weight=1)
     clavierFrame.grid_columnconfigure(8, weight=1)
     clavierFrame.grid_columnconfigure(9, weight=1)
+
 
 
 def creationSuperFrameMessage():
