@@ -14,6 +14,7 @@ import random
 from tkinter import *
 from functools import partial
 import psycopg2
+from PIL import Image, ImageTk
 
 pénalité = 0
 messageErreur = ""
@@ -29,6 +30,9 @@ message = ""
 databaseUsername= "emmanuel"
 databaseMdp= "Tournevis@00"
 bgColor = "#dedede"
+fgColor = "Black"
+gagné = False
+perdu = False
 
 #------------------------------------------------------------------------------
 ## ----- Fonctions Liées au jeu -----
@@ -45,10 +49,13 @@ def pendu():
 def victoire():
     ## Retourne un booleen correspondant au statut de victoire
     ## Vérifie si toutes les lettres du mot mystère ont été trouvées et passe le booléen de victoire à True le cas échéant
-    global message
-    victoire = False
+    global message, clavierFrame, gagné
     if secret.count("_") == 0:
-        victoire = True
+        gagné = True
+        for i in range (65, 91):
+            lettresProposées.append(chr(i))
+        print(lettresProposées)
+        updateClavier()
         message = "Bravo vous avez gagné"
         updateMessage()
 
@@ -57,10 +64,9 @@ def victoire():
 def defaite():
     ## Retourne un booleen correspondant au statut de défaite
     ## Vérifie si le compteur de pénalité a atteint le max et passe le booléen de défaite à True le cas échéant
-    global secret, message
-    defaite = False
+    global secret, message, clavierFrame, perdu
     if pénalité == 5:
-        defaite = True
+        perdu = True
         message = "Dommage vous avez perdu"
         updateMessage()
         secret = word
@@ -71,18 +77,21 @@ def defaite():
 
 
 def verifLettreValid(event):
-    global message
-    if len(event.char.upper()) != 1:
-        message = "Veuillez renseigner 1 et une seule lettre"
-        updateMessage()
-    elif ord(event.char.upper().upper())<65 or ord(event.char.upper().upper())>90:
-        message = "Veuillez renseigner une lettre entre A et Z"
-        updateMessage()
-    elif event.char.upper() in lettresProposées:
-        message = "Vous avez déja proposé cette lettre"
-        updateMessage()
-    else:
-        chercheLettre(event.char.upper())
+    global message, gagné, perdu
+    print("Victoire : ", gagné)
+    print("Defaite : ", perdu)
+    if gagné == False and perdu == False:
+        if len(event.char.upper()) != 1:
+            message = "Veuillez renseigner 1 et une seule lettre"
+            updateMessage()
+        elif ord(event.char.upper().upper())<65 or ord(event.char.upper().upper())>90:
+            message = "Veuillez renseigner une lettre entre A et Z"
+            updateMessage()
+        elif event.char.upper() in lettresProposées:
+            message = "Vous avez déja proposé cette lettre"
+            updateMessage()
+        else:
+            chercheLettre(event.char.upper())
 
 
 def chercheLettre(n):
@@ -99,6 +108,7 @@ def chercheLettre(n):
     if (not letterIsInclude):
         pénalité = pénalité + 1
         defaite()
+        updateImage()
     else:
         secret = afficheMotSecret()
         victoire()
@@ -108,7 +118,9 @@ def chercheLettre(n):
 
 def rejouer():
     ## Relance une partie sur le même theme, même niveau
-    global word, pénalité, lettresProposées, message, secret
+    global word, pénalité, lettresProposées, message, secret, gagné, perdu
+    gagné = False
+    perdu = False
     pénalité = 0
     lettresProposées = []
     word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
@@ -117,20 +129,24 @@ def rejouer():
     updateClavier()
     updateMotMystere()
     updateMessage()
+    updateImage()
 
 
 def menu():
     ## Affiche l'écran menu
-    global word, pénalité, lettresProposées, theme, niveau
+    global word, pénalité, lettresProposées, theme, niveau, gagné, perdu
     word = ""
     pénalité = 0
     lettresProposées = []
     theme = ""
     niveau = ""
+    gagné = False
+    perdu = False
     superFrameSecret.destroy()
     superFrameMessage.destroy()
     superFrameClavier.destroy()
     superFrameBoutons.destroy()
+    superFrameImage.destroy()
     creationThemeFrame()
     chercheThemeDansDatabase()
     afficheTheme()
@@ -146,6 +162,7 @@ def chercheThemeDansDatabase():
     global vwtheme
     cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
+    print("cnx", cnx)
     crs.execute('select * from tb_theme;')
     vwtheme = crs.fetchall()
     crs.close()
@@ -199,7 +216,7 @@ def creationThemeFrame():
     global mainFenetre, themeFrame
     themeFrame = Frame (mainFenetre, bg = bgColor)
     themeFrame.pack(pady=20)
-    labelTheme = Label(themeFrame, text="THEME", bg = bgColor)
+    labelTheme = Label(themeFrame, text="THEME", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
     labelTheme.pack()
 
 
@@ -208,7 +225,7 @@ def afficheTheme():
     global theme
     theme = StringVar(value=0)
     for t in vwtheme:
-        Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, value= list(t)[0], variable = theme, command=afficheNiveau).pack()
+        Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor,  value= list(t)[0], variable = theme, command=afficheNiveau).pack()
 
 
 def afficheNiveau():
@@ -220,7 +237,7 @@ def afficheNiveau():
     destroyNiveauFrame()
     creationNiveauFrame()
     for n in vwniveau:
-        Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).pack()
+        Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).pack()
     #boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
     #boutonPlayFrame.pack(side=BOTTOM, pady=50)
 
@@ -239,7 +256,7 @@ def creationNiveauFrame():
     global niveauFrame
     niveauFrame = Frame (mainFenetre, bg = bgColor)
     niveauFrame.pack()
-    labelNiveau = Label(niveauFrame, text="NIVEAU", bg = bgColor)
+    labelNiveau = Label(niveauFrame, text="NIVEAU", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
     labelNiveau.pack()
 
 
@@ -249,7 +266,7 @@ def creationBoutonPlayFrame():
     destroyBoutonPlay()
     boutonPlayFrame = Frame(mainFenetre, bg = bgColor)
     boutonPlayFrame.pack(side=BOTTOM, pady=50)
-    boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = bgColor, command=motMystere)
+    boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command=motMystere)
     boutonPlay.pack()
 
 
@@ -303,6 +320,10 @@ def motMystere():
     creationSuperFrameSecret()
     creationSecretFrame()
 
+    # Creation de la frame Image -----
+    creationSuperFrameImage()
+    creationFrameImage()
+
 
 
 def afficheMotSecret():
@@ -343,8 +364,8 @@ def creationBoutonsFrame():
     frameMenu.pack(side=LEFT, fill=X, expand=True,)
     frameRejouer.pack(side=RIGHT, fill=X, expand=True,)
 
-    boutonMenu = Button(frameMenu, text="MENU", command=menu, bg = bgColor)
-    boutonRejouer = Button(frameRejouer, text="REJOUER", command=rejouer, bg = bgColor)
+    boutonMenu = Button(frameMenu, text="MENU", command=menu, bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    boutonRejouer = Button(frameRejouer, text="REJOUER", command=rejouer, bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
     boutonMenu.pack(fill=X)
     boutonRejouer.pack(fill=X)
 
@@ -371,19 +392,19 @@ def creationClavier():
 
     for lettre in clavierLigne1:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor).grid(row=0, column=clavierLigne1.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor).grid(row=0, column=clavierLigne1.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
     for lettre in clavierLigne2:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor).grid(row=1, column=clavierLigne2.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor).grid(row=1, column=clavierLigne2.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
     for lettre in clavierLigne3:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
 
     clavierFrame.grid_columnconfigure(0, weight=1)
     clavierFrame.grid_columnconfigure(1, weight=1)
@@ -408,7 +429,7 @@ def creationMessageFrame():
     global message, messageFrame
     messageFrame = Frame(superFrameMessage, bg = bgColor)
     messageFrame.pack(side=BOTTOM)
-    messageLabel = Label(messageFrame, text=message,  bg = bgColor)
+    messageLabel = Label(messageFrame, text=message,  bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor)
     messageLabel.pack()
 
 
@@ -421,9 +442,30 @@ def creationSecretFrame():
     # Creation de la frame mot secret -----
     global secretFrame, secret
     secretFrame = Frame(superFrameSecret, bg = bgColor)
-    secretLabel = Label(secretFrame, text = secret, bg = bgColor)
+    secretLabel = Label(secretFrame, text = secret, bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor)
     secretLabel.pack()
     secretFrame.pack(side = BOTTOM, pady=20)
+
+def creationSuperFrameImage():
+    global superFrameImage
+    superFrameImage = Frame(mainFenetre, bg = bgColor)
+    superFrameImage.pack(side=BOTTOM, fill=BOTH, expand=True)
+
+def creationFrameImage():
+    global frameImage
+    frameImage = Frame(superFrameImage, bg = bgColor)
+    frameImage.pack()
+    # Création et plug de l'image dans la Frame Image
+    im = Image.open(f"image{pénalité}.png")
+    im = im.resize((250, 250))
+    photo = ImageTk.PhotoImage(im, master = frameImage)
+    labelPhoto = Label(frameImage)
+    labelPhoto.img=photo
+    labelPhoto.config(image = labelPhoto.img)
+    labelPhoto.pack(pady=50)
+
+
+
 
 
 def updateClavier():
@@ -451,6 +493,10 @@ def updateMessage():
     messageLabel.pack()
 
 
+def updateImage():
+    global frameImage
+    frameImage.destroy()
+    creationFrameImage()
 
 
 
