@@ -9,7 +9,6 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
-import easygui
 import random
 from tkinter import *
 from functools import partial
@@ -41,9 +40,10 @@ perdu = False
 def pendu():
     ## Lance le pendu
     creationMainFenetre()
-    creationThemeFrame()
-    chercheThemeDansDatabase()
-    afficheTheme()
+    creationSuperFrameImage("top")
+    creationFrameImageAccueil()
+    creationBoutonReglesFrame()
+    creationBoutonStartFrame()
     mainFenetre.mainloop()
 
 def victoire():
@@ -54,7 +54,6 @@ def victoire():
         gagné = True
         for i in range (65, 91):
             lettresProposées.append(chr(i))
-        print(lettresProposées)
         updateClavier()
         message = "Bravo vous avez gagné"
         updateMessage()
@@ -78,8 +77,6 @@ def defaite():
 
 def verifLettreValid(event):
     global message, gagné, perdu
-    print("Victoire : ", gagné)
-    print("Defaite : ", perdu)
     if gagné == False and perdu == False:
         if len(event.char.upper()) != 1:
             message = "Veuillez renseigner 1 et une seule lettre"
@@ -162,7 +159,6 @@ def chercheThemeDansDatabase():
     global vwtheme
     cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
-    print("cnx", cnx)
     crs.execute('select * from tb_theme;')
     vwtheme = crs.fetchall()
     crs.close()
@@ -199,7 +195,7 @@ def chercheMotDansDatabase():
 ## ----- Fenetre de jeu -----
 
 
-#   ------- ECRAN MENU -------
+#   ------- ECRAN ACCUEIL -------
 
 def creationMainFenetre():
     ##Création de la fenêtre principale
@@ -211,33 +207,91 @@ def creationMainFenetre():
     mainFenetre.resizable(0,0)
 
 
+def creationBoutonReglesFrame():
+    ## Création de la Frame Bouton Règles
+    global mainFenetre, boutonReglesFrame
+    boutonReglesFrame = Frame (mainFenetre, bg = bgColor)
+    boutonReglesFrame.pack(pady=20)
+    boutonRegles = Button(boutonReglesFrame, text="REGLES", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    boutonRegles.pack()
+
+
+def creationBoutonStartFrame():
+    ## Création de la Frame Bouton Start
+    global mainFenetre, boutonStartFrame
+    boutonStartFrame = Frame (mainFenetre, bg = bgColor)
+    boutonStartFrame.pack(pady=20)
+    boutonRegles = Button(boutonStartFrame, text="START", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command = goToMenu)
+    boutonRegles.pack()
+
+
+def creationFrameImageAccueil():
+    global frameImage
+    frameImage = Frame(superFrameImage, bg = bgColor)
+    frameImage.pack()
+    # Création et plug de l'image dans la Frame Image
+    im = Image.open(f"lependu.png")
+    im = im.resize((250, 250))
+    photo = ImageTk.PhotoImage(im, master = frameImage)
+    labelPhoto = Label(frameImage)
+    labelPhoto.img=photo
+    labelPhoto.config(image = labelPhoto.img)
+    labelPhoto.pack(pady=50)
+
+def goToMenu():
+    boutonReglesFrame.destroy()
+    boutonStartFrame.destroy()
+    superFrameImage.destroy()
+    creationBoutonRetourAccueilFrame()
+    creationThemeFrame()
+    chercheThemeDansDatabase()
+    afficheTheme()
+
+
+
+#   ------- ECRAN MENU -------
+
 def creationThemeFrame():
     ## Création de la Frame Theme
     global mainFenetre, themeFrame
     themeFrame = Frame (mainFenetre, bg = bgColor)
     themeFrame.pack(pady=20)
     labelTheme = Label(themeFrame, text="THEME", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
-    labelTheme.pack()
+    labelTheme.grid(row=0, column=0, columnspan = 2)
 
 
 def afficheTheme():
     ## Affichage des thèmes issus de la database dans la frame Thème
     global theme
     theme = StringVar(value=0)
+    col = 0
+    row = 1
     for t in vwtheme:
-        Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor,  value= list(t)[0], variable = theme, command=afficheNiveau).pack()
-
-
+        if vwtheme.index(t)%2 !=0:
+            Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor,  value= list(t)[0], variable = theme, command=afficheNiveau).grid(row=row, column=col)
+            row +=1
+            col =0
+        else:
+            Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor,  value= list(t)[0], variable = theme, command=afficheNiveau).grid(row=row, column=col)
+            col += 1
 def afficheNiveau():
     ## Recherche des niveaux dans la database - Création de la Frame niveau et affichage des thèmes -----
     global vwniveau, niveauFrame, niveau, boutonPlayFrame, theme
-    t=theme.get()
+    #t=theme.get()
     niveau = StringVar(value=0)
     chercheNiveauDansDatabase()
     destroyNiveauFrame()
     creationNiveauFrame()
+    col = 0
+    row = 1
     for n in vwniveau:
-        Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).pack()
+        if vwniveau.index(n)%2 !=0:
+            Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).grid(row=row, column=col)
+            row +=1
+            col =0
+        else:
+            Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).grid(row=row, column=col)
+            col += 1
     #boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
     #boutonPlayFrame.pack(side=BOTTOM, pady=50)
 
@@ -257,7 +311,7 @@ def creationNiveauFrame():
     niveauFrame = Frame (mainFenetre, bg = bgColor)
     niveauFrame.pack()
     labelNiveau = Label(niveauFrame, text="NIVEAU", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
-    labelNiveau.pack()
+    labelNiveau.grid(row=0, column=0, columnspan=2)
 
 
 def creationBoutonPlayFrame():
@@ -276,6 +330,51 @@ def destroyBoutonPlay():
         boutonPlayFrame.destroy()
     except:
         pass
+
+
+def goToAccueil():
+    # Suppression de la frame bouton -----
+    try:
+        boutonPlayFrame.destroy()
+    except:
+        pass
+    # Suppression de la frame niveau
+    try:
+        niveauFrame.destroy()
+    except:
+        pass
+    # Suppression de la frame theme -----
+    try:
+        themeFrame.destroy()
+    except:
+        pass
+    try:
+        boutonRetourAccueilFrame.destroy()
+    except:
+        pass
+    creationSuperFrameImage("top")
+    creationFrameImage()
+    creationBoutonReglesFrame()
+    creationBoutonStartFrame()
+
+
+def affiche():
+    print("clic")
+
+def creationBoutonRetourAccueilFrame():
+    ## Création de la Frame Bouton Retour Accueil
+    global mainFenetre, boutonRetourAccueilFrame, boutonRetourAccueil, im, fleche
+    boutonRetourAccueilFrame = Frame (mainFenetre, bg = bgColor)
+    boutonRetourAccueilFrame.pack( fill=BOTH, side=TOP, pady=10, padx=10)
+
+    im = Image.open(r"D:\Manu\FORMATIONS\PYTHON\PENDU\penduGIT\jeuPendu\return.png")
+    #im.show()
+    im = im.resize((30,30), Image.ANTIALIAS)
+    fleche = ImageTk.PhotoImage(im)
+
+    #boutonRetourAccueil = Button(boutonRetourAccueilFrame, image=fleche,  bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, compound=CENTER)
+    boutonRetourAccueil = Button(boutonRetourAccueilFrame, image=fleche, bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command = goToAccueil, borderwidth=0)
+    boutonRetourAccueil.pack(side=LEFT,)
 
 
 
@@ -303,6 +402,8 @@ def motMystere():
     niveauFrame.destroy()
     # Suppression de la frame theme -----
     themeFrame.destroy()
+    # Suppression de la frame retour Accueil Bouton
+    boutonRetourAccueilFrame.destroy()
 
     # Creation de la frame Boutons et des boutons MENU et REJOUER-----
     creationSuperFrameBoutons()
@@ -321,7 +422,7 @@ def motMystere():
     creationSecretFrame()
 
     # Creation de la frame Image -----
-    creationSuperFrameImage()
+    creationSuperFrameImage('bottom')
     creationFrameImage()
 
 
@@ -337,8 +438,11 @@ def afficheMotSecret():
                 lettreIncluse = not lettreIncluse
             else:
                 lettreIncluse = lettreIncluse
-        if lettreIncluse == True or word[i] == " ":
+        if lettreIncluse == True:
             secret += (word[i]+" ")
+            lettreIncluse = not lettreIncluse
+        elif word[i] == " ":
+            secret += (word[i]+"  ")
             lettreIncluse = not lettreIncluse
         else:
             secret += ("_ ")
@@ -389,22 +493,30 @@ def creationClavier():
     clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
     clavierLigne3 = ["W", "X", "C", "V", "B", "N"]
 
-
     for lettre in clavierLigne1:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
+            if lettre in word:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#81b29a", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
+            else:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#ffa69e", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, command=lambda e=lettre:chercheLettre(e), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
     for lettre in clavierLigne2:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
+            if lettre in word:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#81b29a", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
+            else:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#ffa69e", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
+            Button(clavierFrame, text=lettre, width=20, command=lambda e=lettre:chercheLettre(e), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
     for lettre in clavierLigne3:
         if lettre in lettresProposées:
-            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+            if lettre in word:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#81b29a", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=2+clavierLigne3.index(lettre))
+            else:
+                Button(clavierFrame, text=lettre, width=20, state="disable", bg = "#ffa69e", fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=2+clavierLigne3.index(lettre))
         else:
-            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+            Button(clavierFrame, text=lettre, width=20, command=lambda e=lettre:chercheLettre(e), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=2+clavierLigne3.index(lettre))
 
     clavierFrame.grid_columnconfigure(0, weight=1)
     clavierFrame.grid_columnconfigure(1, weight=1)
@@ -439,17 +551,17 @@ def creationSuperFrameSecret():
     superFrameSecret.pack(side=BOTTOM, fill=X)
 
 def creationSecretFrame():
-    # Creation de la frame mot secret -----
+    # Creation de la frame mot secret
     global secretFrame, secret
     secretFrame = Frame(superFrameSecret, bg = bgColor)
     secretLabel = Label(secretFrame, text = secret, bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor)
     secretLabel.pack()
     secretFrame.pack(side = BOTTOM, pady=20)
 
-def creationSuperFrameImage():
+def creationSuperFrameImage(side):
     global superFrameImage
     superFrameImage = Frame(mainFenetre, bg = bgColor)
-    superFrameImage.pack(side=BOTTOM, fill=BOTH, expand=True)
+    superFrameImage.pack(side=side, fill=BOTH, expand=True)
 
 def creationFrameImage():
     global frameImage
@@ -501,18 +613,39 @@ def updateImage():
 
 
 
+'''
+
+##Création de la fenêtre principale
+global mainFenetre
+mainFenetre = Tk()
+mainFenetre.title("Pendu")
+mainFenetre.config(bg = bgColor)
+mainFenetre.geometry("400x600")
+mainFenetre.resizable(0,0)
 
 
 
 
 
+boutonRetourAccueilFrame = Frame (mainFenetre, bg = 'red')
+boutonRetourAccueilFrame.pack()
+
+im = Image.open(r"D:\Manu\FORMATIONS\PYTHON\PENDU\penduGIT\jeuPendu\return.png")
+#im.show()
+im = im.resize((30,30), Image.ANTIALIAS)
+fleche = ImageTk.PhotoImage(im)
+
+boutonRetourAccueil = Button(boutonRetourAccueilFrame, image=fleche, text="a", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command = affiche, compound=CENTER)
+#boutonRetourAccueil = Button(boutonRetourAccueilFrame, text="ACCUEIL", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command = goToAccueil)
+boutonRetourAccueil.pack()
 
 
 
 
+mainFenetre.mainloop()
 
 
-
+'''
 
 
 
