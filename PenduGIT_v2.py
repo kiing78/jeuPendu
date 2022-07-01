@@ -4,17 +4,17 @@
 #
 # Author:      emman
 #
-# Created:     02/06/2022
+# Created:     16/06/2022
 # Copyright:   (c) emman 2022
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-
 
 import easygui
 import random
 from tkinter import *
 from functools import partial
 import psycopg2
+from PIL import Image, ImageTk
 
 pénalité = 0
 messageErreur = ""
@@ -27,213 +27,152 @@ lost = False
 theme = ""
 dataMot = []
 message = ""
+databaseUsername= "sebastien"
+databaseMdp= "root"
+bgColor = "#dedede"
+fgColor = "Black"
+gagné = False
+perdu = False
+
+#------------------------------------------------------------------------------
+## ----- Fonctions Liées au jeu -----
 
 
-## ----- Création de la fênetre de jeu -----
-
-## ----- Connexion à la database pour récupérer les thèmes et niveaux disponibles -----
-
-## ----- Définition des fonctions qui lancent le jeu -----
 def pendu():
     ## Lance le pendu
-     ## Définition des variables
-      # Variables Globales qui seront appelées et modifiées dans des fonctions
-
-      # Variables locales -dans la fonction pendu()- qui ne seront pas modifiées dans les fonctions
-
-
     creationMainFenetre()
     creationThemeFrame()
     chercheThemeDansDatabase()
     afficheTheme()
-    #creationNiveauFrame()
-    #chercheNiveauDansDatabase()
-
-    '''
-    def boutonPlay():
-        ## Affiche un bouton PLAY fois le thème choisi pour déterminer le mot choisi
-        global boutonPlayFrame
-        boutonPlayFrame.destroy()
-        boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
-        boutonPlayFrame.pack(side = BOTTOM, pady=50)
-        global boutonPlay
-        boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = "#dedede", command=motMystere)
-        boutonPlay.pack()
-    '''
-    '''
-    def choixNiveau():
-        ## Propose les niveaux correspondant au thème selectionné
-          # Connexion à la database pour récupérer les thèmes
-
-          # Destruction de la frame niveau au cas où l'utilisateur change de thème
-        global mainFenetre
-        global niveauFrame
-        niveauFrame.destroy()
-        global niveau
-          # Sélectionne par défaut le premier niveau du thème sélectionné
-        niveau = StringVar(value=vwniveau[0][0])
-          #Création et affichage de la frame niveau
-        niveauFrame = Frame (mainFenetre)
-    '''
-
-
-
-    #Création et affichage de la frame thème
-
-
     mainFenetre.mainloop()
 
-
-'''
-    while (win == False and lost == False):
-        ## Tant que le joueur n'a ni gagné, ni perdu, la boucle demande des lettres à l'utilisateur, vérifie si elle est contenue dans le mot mystère et les condition de victoire et défaite
-        secret = afficheMotSecret()
-        messageErreur, pénalité = chercheLettre()
-        if messageErreur != "":
-            easygui.msgbox(f"{messageErreur}")
-            messageErreur = ""
-        secret = afficheMotSecret()
-        win = victoire()
-        lost = defaite()
-
-'''
-
-
-## ----- Fonctions Liées au jeu -----
-
 def victoire():
+    ## Retourne un booleen correspondant au statut de victoire
     ## Vérifie si toutes les lettres du mot mystère ont été trouvées et passe le booléen de victoire à True le cas échéant
-    global message
-    victoire = False
+    global message, clavierFrame, gagné
     if secret.count("_") == 0:
-        victoire = True
-        print("Bravo vous avez gagné")
-        messageFrame.destroy()
+        gagné = True
+        for i in range (65, 91):
+            lettresProposées.append(chr(i))
+        print(lettresProposées)
+        updateClavier()
         message = "Bravo vous avez gagné"
-        creationMessageFrame()
-        ## msgbox ("Bravo, vous avez gagné", title = "pendu")
-    return victoire
+        updateMessage()
+
+
 
 def defaite():
+    ## Retourne un booleen correspondant au statut de défaite
     ## Vérifie si le compteur de pénalité a atteint le max et passe le booléen de défaite à True le cas échéant
-    global secret, message
-    defaite = False
+    global secret, message, clavierFrame, perdu
     if pénalité == 5:
-        defaite = True
-        messageFrame.destroy()
+        perdu = True
         message = "Dommage vous avez perdu"
-        creationMessageFrame()
+        updateMessage()
         secret = word
-        secretFrame.destroy()
-        creationSecretFrame()
-        secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
-        secretLabel.pack()
-        secretFrame.pack(side = BOTTOM, pady=20)
-        print("Dommage, vous avez perdu")
-    return defaite
+        #secretFrame.destroy()
+        #creationSecretFrame()
+        updateMotMystere()
+
+
+
+def verifLettreValid(event):
+    global message, gagné, perdu
+    print("Victoire : ", gagné)
+    print("Defaite : ", perdu)
+    if gagné == False and perdu == False:
+        if len(event.char.upper()) != 1:
+            message = "Veuillez renseigner 1 et une seule lettre"
+            updateMessage()
+        elif ord(event.char.upper().upper())<65 or ord(event.char.upper().upper())>90:
+            message = "Veuillez renseigner une lettre entre A et Z"
+            updateMessage()
+        elif event.char.upper() in lettresProposées:
+            message = "Vous avez déja proposé cette lettre"
+            updateMessage()
+        else:
+            chercheLettre(event.char.upper())
+
 
 def chercheLettre(n):
     ## Vérifie si la lettre renseignée est dans le mot, l'ajoute dans le tableau de lettres proposées incrémmente le compteur de pénalité le cas échéant
-    # ----- Etape 17 = Vérification de la lettre sélectionnée -----
-    print('# ----- Etape 17 = Vérification de la lettre sélectionnée -----')
-    print('welcome in chercheLettre : ', n)
-    global pénalité, lettresProposées, secret, secretFrame
+    global pénalité, lettresProposées, secret, secretFrame, message
     lettre=n
-    messageErreur = ""
+    message = ""
     pénalité = pénalité
-    print("pénalité : ", pénalité)
-    print("messageErreur : ", messageErreur)
-    if len(lettre) != 1:
-        print("erreur 1")
-        messageErreur = "Veuillez renseigner 1 et une seule lettre"
-        return messageErreur, pénalité
-    elif ord(lettre.upper())<65 or ord(lettre.upper())>90:
-        print("erreur 2")
-        messageErreur = "Veuillez renseigner une lettre entre A et Z"
-        return messageErreur, pénalité
-    elif lettre in lettresProposées:
-        print("erreur 3")
-        messageErreur = "Vous avez déja proposé cette lettre"
-        return messageErreur, pénalité
+    updateMessage()
+    # Vérifie les erreurs de proposition de lettre
+    letterIsInclude = lettre in word
+    lettresProposées.append(lettre)
+    updateClavier()
+    if (not letterIsInclude):
+        pénalité = pénalité + 1
+        defaite()
+        updateImage()
     else:
-        print("pas d'erreur")
-        letterIsInclude = lettre in word
-        lettresProposées.append(lettre)
-        if (not letterIsInclude):
-            print("La lettre n'est pas incluse")
-            pénalité = pénalité + 1
-            defaite()
-            return messageErreur, pénalité
-        else:
-            print("La lettre est incluse")
-            secret = afficheMotSecret()
-            victoire()
-            print('secretFrame : ', secretFrame)
-            try:
-                secretFrame.destroy()
-            except:
-                pass
-            creationSecretFrame()
-            secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
-            secretLabel.pack()
-            secretFrame.pack(side = BOTTOM, pady=20)
+        secret = afficheMotSecret()
+        victoire()
+        secretFrame.destroy()
+        creationSecretFrame()
+
 
 def rejouer():
-    global word, pénalité, lettresProposées, message
+    ## Relance une partie sur le même theme, même niveau
+    global word, pénalité, lettresProposées, message, secret, gagné, perdu
+    gagné = False
+    perdu = False
     pénalité = 0
     lettresProposées = []
     word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
     secret = afficheMotSecret()
-    try:
-        secretFrame.destroy()
-    except:
-        pass
-    messageFrame.destroy()
     message = ""
-    creationMessageFrame()
-    creationSecretFrame()
-    secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
-    secretLabel.pack()
-    secretFrame.pack(side = BOTTOM, pady=20)
+    updateClavier()
+    updateMotMystere()
+    updateMessage()
+    updateImage()
+
 
 def menu():
-    ## Réinitialise toutes les variables relatives au jeu, supprime les frames relatives au jeu et "recharge" les frames relatives au menu
-    global word, pénalité, lettresProposées, theme, niveau
+    ## Affiche l'écran menu
+    global word, pénalité, lettresProposées, theme, niveau, gagné, perdu
     word = ""
     pénalité = 0
     lettresProposées = []
     theme = ""
     niveau = ""
-    secretFrame.destroy()
-    messageFrame.destroy()
-    clavierFrame.destroy()
-    boutonsFrame.destroy()
+    gagné = False
+    perdu = False
+    superFrameSecret.destroy()
+    superFrameMessage.destroy()
+    superFrameClavier.destroy()
+    superFrameBoutons.destroy()
+    superFrameImage.destroy()
     creationThemeFrame()
     chercheThemeDansDatabase()
     afficheTheme()
 
+
+
+#------------------------------------------------------------------------------
 ## ----- Connexion database -----
 
 
 def chercheThemeDansDatabase():
-    # ----- Etape 3 = Recherche des thèmes dans la database -----
-    print('# ----- Etape 3 = Recherche des thèmes dans la database -----')
+    ##Recherche des thèmes dans la database
     global vwtheme
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
-    ## Execution des requêtes et enregistrement du resultat dans des variables
+    print("cnx", cnx)
     crs.execute('select * from tb_theme;')
     vwtheme = crs.fetchall()
-    ## Fermeture de la connexion
     crs.close()
     cnx.close()
 
 def chercheNiveauDansDatabase():
-    # ----- Etape 5A = Recherche des niveaux dans la database -----
-    print('# ----- Etape 5A = Recherche des niveaux dans la database -----')
+    ## Recherche des niveaux dans la database en fonction du thème choisi
     global theme, vwniveau
     t = theme.get()
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
     crs.execute(f'select * from fx_niveau({t});')
     vwniveau = crs.fetchall()
@@ -241,10 +180,9 @@ def chercheNiveauDansDatabase():
     cnx.close()
 
 def chercheMotDansDatabase():
-     # ----- Etape 9A = Recherche des mots correspondants au niveau dans la dataBase -----
-    print('# ----- Etape 9A = Recherche des mots correspondants au niveau dans la dataBase -----')
+     ## Recherche des mots dans la dataBase en fonction du niveau choisis
     global dataMot
-    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user='emmanuel', password='Tournevis@00')
+    cnx = psycopg2.connect(host='localhost', port='5432', database='db_pendu', user=databaseUsername, password=databaseMdp)
     crs = cnx.cursor()
     crs.execute(f'select * from fx_mot2({niveau.get()});')
     dataMot = crs.fetchall()
@@ -253,129 +191,56 @@ def chercheMotDansDatabase():
 
 
 
+
+
+
+
+#------------------------------------------------------------------------------
 ## ----- Fenetre de jeu -----
 
-def creationClavier():
-    ## Création de la frame et des boutons du clavier
-    global clavierFrame, current_lettre
-    # ----- Etape 15A = Création de la frame clavier -----
-    print('# ----- Etape 15A = Création de la frame clavier -----')
-    clavierFrame = Frame (mainFenetre, bg = "#dedede")
-    # ----- Etape 15B = Création du clavier -----
-    print('# ----- Etape 15B = Création du clavier -----')
-    clavierLigne1 = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"]
-    clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
-    clavierLigne3 = ["W", "X", "C", "V", "B", "N"]
-    current_lettre=()
-    for lettre in clavierLigne1:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=0, column=clavierLigne1.index(lettre))
-    for lettre in clavierLigne2:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=1, column=clavierLigne2.index(lettre))
-    for lettre in clavierLigne3:
-        Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre)).grid(row=2, column=clavierLigne3.index(lettre)+2)
-    clavierFrame.grid_columnconfigure(0, weight=1)
-    clavierFrame.grid_columnconfigure(1, weight=1)
-    clavierFrame.grid_columnconfigure(2, weight=1)
-    clavierFrame.grid_columnconfigure(3, weight=1)
-    clavierFrame.grid_columnconfigure(4, weight=1)
-    clavierFrame.grid_columnconfigure(5, weight=1)
-    clavierFrame.grid_columnconfigure(6, weight=1)
-    clavierFrame.grid_columnconfigure(7, weight=1)
-    clavierFrame.grid_columnconfigure(8, weight=1)
-    clavierFrame.grid_columnconfigure(9, weight=1)
 
-def creationSecretFrame():
-    # ----- Etape 14 = creation de la frame mot secret -----
-    print('# ----- Etape 14 = creation de la frame mot secret -----')
-    global secretFrame
-    secretFrame = Frame(mainFenetre, bg = "#dedede")
+#   ------- ECRAN MENU -------
 
-def creationBoutonsFrame():
-    # ----- Etape 14.2 = creation de la frame Boutons qui contiendra les boutons MENU et REJOUER ainsi que ces boutons -----
-    print('# ----- Etape 14.2 = creation de la frame mot secret -----')
-    global boutonsFrame
-    boutonsFrame = Frame(mainFenetre, bg = "#dedede")
-    boutonsFrame.pack(side=BOTTOM, fill=X)
-
-    frameMenu=Frame(boutonsFrame)
-    frameRejouer=Frame(boutonsFrame)
-
-    frameMenu.pack(side=LEFT, fill=X, expand=True,)
-    frameRejouer.pack(side=RIGHT, fill=X, expand=True,)
-
-    boutonMenu = Button(frameMenu, text="MENU", command=menu)
-    boutonRejouer = Button(frameRejouer, text="REJOUER", command=rejouer)
-    boutonMenu.pack(fill=X)
-    boutonRejouer.pack(fill=X)
+def creationMainFenetre():
+    ##Création de la fenêtre principale
+    global mainFenetre
+    mainFenetre = Tk()
+    mainFenetre.title("Pendu")
+    mainFenetre.config(bg = bgColor)
+    mainFenetre.geometry("400x600")
+    mainFenetre.resizable(0,0)
 
 
-
-def motMystere():
-    ## Récupère la liste de mots correspondant au niveau sélectionné et selectionne 1 de celui-ci comme mot mystère
-    # ----- Etape 9 = Recherche des mots correspondants au niveau dans la dataBase -----
-    print('# ----- Etape 9 = Recherche des mots correspondants au niveau dans la dataBase -----')
-    global word, secret, dataMot, secretFrame, clavierFrame
-    chercheMotDansDatabase()
-    # ----- Etape 9B = Sélection d'1 mot aléatoire -----
-    print("# ----- Etape 9B = Sélection d'1 mot aléatoire -----")
-    word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
-    # ----- Etape 10 = transformation du mot en _ _ _ -----
-    print('# ----- Etape 10 = transformation du mot en _ _ _ -----')
-    secret = afficheMotSecret()
-    # ----- Etape 11 = Suppression de la frame bouton -----
-    print('# ----- Etape 11 = Suppression de la frame bouton -----')
-    boutonPlayFrame.destroy()
-    # ----- Etape 12 = Suppression de la frame niveau -----
-    print('# ----- Etape 12 = Suppression de la frame niveau -----')
-    niveauFrame.destroy()
-    # ----- Etape 13 = Suppression de la frame theme -----
-    print('# ----- Etape 13 = Suppression de la frame theme -----')
-    themeFrame.destroy()
-    # ----- Etape 14.1 = creation de la frame Boutons -----
-    print('# ----- Etape 14.1 = creation de la frame Boutons -----')
-    creationBoutonsFrame()
-    # ----- Etape 14 = creation de la frame mot secret -----
-    print('# ----- Etape 14 = creation de la frame mot secret -----')
-    creationSecretFrame()
-    # ----- Etape 15 = Création de la frame clavier et du clavier -----
-    print('# ----- Etape 15 = Création de la frame clavier et du clavier -----')
-    creationClavier()
-    # ----- Etape 15C = Affichage de la frame Clavier -----
-    print('# ----- Etape 15C = Affichage de la frame Clavier -----')
-    clavierFrame.pack(side = BOTTOM, pady=20)
-    print('# ----- Création et affichage de la frame Message')
-    creationMessageFrame()
-    # ----- Etape 16 = Création et affichage  de la frame mot secret -----
-    print('# ----- Etape 16 = Création et affichage  de la frame mot secret -----')
-    secretLabel = Label(secretFrame, text = secret, bg = "#dedede")
-    secretLabel.pack()
-    secretFrame.pack(side = BOTTOM, pady=20)
-
-def creationMessageFrame():
-    global message, messageFrame
-    messageFrame = Frame(mainFenetre, bg = "#dedede")
-    messageFrame.pack(side=BOTTOM)
-    messageLabel = Label(messageFrame, text=message,  bg = "#dedede")
-    messageLabel.pack()
+def creationThemeFrame():
+    ## Création de la Frame Theme
+    global mainFenetre, themeFrame
+    themeFrame = Frame (mainFenetre, bg = bgColor)
+    themeFrame.pack(pady=20)
+    labelTheme = Label(themeFrame, text="THEME", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    labelTheme.pack()
 
 
+def afficheTheme():
+    ## Affichage des thèmes issus de la database dans la frame Thème
+    global theme
+    theme = StringVar(value=0)
+    for t in vwtheme:
+        Radiobutton(themeFrame, text=str(list(t)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor,  value= list(t)[0], variable = theme, command=afficheNiveau).pack()
 
-def creationBoutonPlayFrame():
-    # ----- Etape 8 = Création de la Frame bouton et du bouton PLAY -----
-    print('# ----- Etape 8 = Création de la Frame bouton et du bouton PLAY -----')
-    global boutonPlayFrame, mainFenetre
-    destroyBoutonPlay()
-    boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
-    boutonPlayFrame.pack(side=BOTTOM, pady=50)
-    boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = "#dedede", command=motMystere)
-    boutonPlay.pack()
 
-def destroyBoutonPlay():
-    global boutonPlayFrame
-    try:
-        boutonPlayFrame.destroy()
-    except:
-        pass
+def afficheNiveau():
+    ## Recherche des niveaux dans la database - Création de la Frame niveau et affichage des thèmes -----
+    global vwniveau, niveauFrame, niveau, boutonPlayFrame, theme
+    t=theme.get()
+    niveau = StringVar(value=0)
+    chercheNiveauDansDatabase()
+    destroyNiveauFrame()
+    creationNiveauFrame()
+    for n in vwniveau:
+        Radiobutton(niveauFrame, text=str(list(n)[1]), bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).pack()
+    #boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
+    #boutonPlayFrame.pack(side=BOTTOM, pady=50)
+
 
 def destroyNiveauFrame():
     global niveauFrame
@@ -385,69 +250,84 @@ def destroyNiveauFrame():
     except:
         pass
 
+
 def creationNiveauFrame():
-    # ----- Etape 7A = Création de la Frame niveau -----
-    print('# ----- Etape 7A = Création de la Frame niveau -----')
+    ## Création de la Frame niveau
     global niveauFrame
-    niveauFrame = Frame (mainFenetre, bg = "#dedede")
+    niveauFrame = Frame (mainFenetre, bg = bgColor)
     niveauFrame.pack()
-    labelNiveau = Label(niveauFrame, text="NIVEAU", bg = "#dedede")
+    labelNiveau = Label(niveauFrame, text="NIVEAU", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
     labelNiveau.pack()
 
-def afficheNiveau():
-    # ----- Etape 5 = Recherche des niveaux dans la database - Création de la Frame niveau et affichage des thèmes -----
-    print('# ----- Etape 5 = Recherche des niveaux dans la database - Création de la Frame niveau et affichage des thèmes -----')
-    global vwniveau, niveauFrame, niveau, boutonPlayFrame, theme
-    t=theme.get()
-    niveau = StringVar(value=0)
-    chercheNiveauDansDatabase()
-    # ----- Etape 6 = Suppression du Bouton PLAY et du niveau existant en cas de changement de theme -----
-    print('# ----- Etape 6 = Suppression du Bouton PLAY et du niveau existant en cas de changement de theme -----')
-    destroyNiveauFrame()
-    # ----- Etape 7 = Création de la Frame niveau et affichage des thèmes -----
-    print('# ----- Etape 7 = Création de la Frame niveau et affichage des thèmes -----')
-    creationNiveauFrame()
-    # ----- Etape 7B = Affichage des themes -----
-    print('# ----- Etape 7B = Affichage des themes -----')
-    for n in vwniveau:
-        Radiobutton(niveauFrame, text=str(list(n)[1]), bg = "#dedede", value= list(n)[0], variable = niveau, command=creationBoutonPlayFrame).pack()
-    #boutonPlayFrame = Frame(mainFenetre, bg = "#dedede")
-    #boutonPlayFrame.pack(side=BOTTOM, pady=50)
+
+def creationBoutonPlayFrame():
+    ## Création de la Frame bouton et du bouton PLAY -----
+    global boutonPlayFrame, mainFenetre
+    destroyBoutonPlay()
+    boutonPlayFrame = Frame(mainFenetre, bg = bgColor)
+    boutonPlayFrame.pack(side=BOTTOM, pady=50)
+    boutonPlay = Button(boutonPlayFrame, text="PLAY", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command=motMystere)
+    boutonPlay.pack()
 
 
-def creationMainFenetre():
-    # ----- Etape 1 = Création de la fenêtre principale -----
-    print('# ----- Etape 1 = Création de la fenêtre principale -----')
-    global mainFenetre
-    mainFenetre = Tk()
-    mainFenetre.title("Pendu")
-    mainFenetre.config(bg = "#dedede")
-    mainFenetre.geometry("400x600")
-    mainFenetre.resizable(0,0)
+def destroyBoutonPlay():
+    global boutonPlayFrame
+    try:
+        boutonPlayFrame.destroy()
+    except:
+        pass
 
-def creationThemeFrame():
-    # ----- Etape 2 = Création de la Frame Theme -----
-    print('# ----- Etape 2 = Création de la Frame Theme -----')
-    global mainFenetre, themeFrame
-    themeFrame = Frame (mainFenetre, bg = "#dedede")
-    themeFrame.pack(pady=20)
-    labelTheme = Label(themeFrame, text="THEME", bg = "#dedede")
-    labelTheme.pack()
 
-def afficheTheme():
-    # ----- Etape 4 = Affichage des thèmes issus de la database dans la frame Thème -----
-    print('# ----- Etape 4 = Affichage des thèmes issus de la database dans la frame Thème -----')
-    global theme
-    theme = StringVar(value=0)
-    for t in vwtheme:
-        print('t : ', t)
-        Radiobutton(themeFrame, text=str(list(t)[1]), bg = "#dedede", value= list(t)[0], variable = theme, command=afficheNiveau).pack()
+
+
+
+#   ------- ECRAN JEU -------
+
+
+
+
+def motMystere():
+    ## Récupère la liste de mots correspondant au niveau sélectionné et selectionne 1 de celui-ci comme mot mystère
+    global word, secret, dataMot, secretFrame, clavierFrame
+    # Cherche les mots dans la database correspondant au niveau choisi
+    chercheMotDansDatabase()
+
+    # Sélection d'1 mot aléatoire
+    word=list(dataMot[random.randint(0, len(dataMot)-1)])[0]
+    # transformation du mot en
+    secret = afficheMotSecret()
+
+    # Suppression de la frame bouton -----
+    boutonPlayFrame.destroy()
+    # Suppression de la frame niveau
+    niveauFrame.destroy()
+    # Suppression de la frame theme -----
+    themeFrame.destroy()
+
+    # Creation de la frame Boutons et des boutons MENU et REJOUER-----
+    creationSuperFrameBoutons()
+    creationBoutonsFrame()
+
+    # Création de la frame clavier et du clavier
+    creationSuperFrameClavier()
+    creationClavier()
+
+    # Création de la frame message
+    creationSuperFrameMessage()
+    creationMessageFrame()
+
+    # Creation de la frame mot secret -----
+    creationSuperFrameSecret()
+    creationSecretFrame()
+
+    # Creation de la frame Image -----
+    creationSuperFrameImage()
+    creationFrameImage()
 
 
 
 def afficheMotSecret():
-    ## Affiche le mot mystère sous forme de "_" ou de lettres en lien avec le tableau de lettres proposées
-    print('# ----- Etape 10A = transformation du mot en _ _ _ -----')
+    ## Retourne le mot mystère sous forme de "_" ou de lettres en lien avec le tableau de lettres proposées
     global lettresProposées
     secret = ""
     for i in range(len(word)):
@@ -466,6 +346,174 @@ def afficheMotSecret():
 
 
 
+def creationSuperFrameBoutons():
+    global superFrameBoutons
+    superFrameBoutons = Frame(mainFenetre, bg = bgColor)
+    superFrameBoutons.pack(side=BOTTOM, fill=X)
 
+
+def creationBoutonsFrame():
+    # ----- Etape 14.2 = creation de la frame Boutons qui contiendra les boutons MENU et REJOUER ainsi que ces boutons -----
+    global boutonsFrame
+    boutonsFrame = Frame(superFrameBoutons, bg = bgColor)
+    boutonsFrame.pack(fill=X)
+
+    frameMenu=Frame(boutonsFrame)
+    frameRejouer=Frame(boutonsFrame)
+
+    frameMenu.pack(side=LEFT, fill=X, expand=True,)
+    frameRejouer.pack(side=RIGHT, fill=X, expand=True,)
+
+    boutonMenu = Button(frameMenu, text="MENU", command=menu, bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    boutonRejouer = Button(frameRejouer, text="REJOUER", command=rejouer, bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    boutonMenu.pack(fill=X)
+    boutonRejouer.pack(fill=X)
+
+
+
+def creationSuperFrameClavier():
+    global superFrameClavier
+    superFrameClavier = Frame(mainFenetre, bg = bgColor)
+    superFrameClavier.pack(side=BOTTOM, fill=X)
+
+
+
+
+def creationClavier():
+    ## Création de la frame et des boutons du clavier
+    global clavierFrame, lettresProposées
+    clavierFrame = Frame (superFrameClavier, bg = bgColor)
+    clavierFrame.bind_all("<Key>", verifLettreValid)
+    clavierFrame.pack(side = BOTTOM, pady=20)
+    clavierLigne1 = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P"]
+    clavierLigne2 = ["Q", "S", "D", "F", "G", "H", "J", "K", "L", "M"]
+    clavierLigne3 = ["W", "X", "C", "V", "B", "N"]
+
+
+    for lettre in clavierLigne1:
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=0, column=clavierLigne1.index(lettre))
+    for lettre in clavierLigne2:
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=1, column=clavierLigne2.index(lettre))
+    for lettre in clavierLigne3:
+        if lettre in lettresProposées:
+            Button(clavierFrame, text=lettre, width=20, state="disable", bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+        else:
+            Button(clavierFrame, text=lettre, width=20, command=partial(chercheLettre, lettre), bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor).grid(row=2, column=clavierLigne3.index(lettre)+2)
+
+    clavierFrame.grid_columnconfigure(0, weight=1)
+    clavierFrame.grid_columnconfigure(1, weight=1)
+    clavierFrame.grid_columnconfigure(2, weight=1)
+    clavierFrame.grid_columnconfigure(3, weight=1)
+    clavierFrame.grid_columnconfigure(4, weight=1)
+    clavierFrame.grid_columnconfigure(5, weight=1)
+    clavierFrame.grid_columnconfigure(6, weight=1)
+    clavierFrame.grid_columnconfigure(7, weight=1)
+    clavierFrame.grid_columnconfigure(8, weight=1)
+    clavierFrame.grid_columnconfigure(9, weight=1)
+
+
+
+def creationSuperFrameMessage():
+    global superFrameMessage
+    superFrameMessage = Frame(mainFenetre, bg = bgColor)
+    superFrameMessage.pack(side=BOTTOM, fill=X)
+
+
+def creationMessageFrame():
+    global message, messageFrame
+    messageFrame = Frame(superFrameMessage, bg = bgColor)
+    messageFrame.pack(side=BOTTOM)
+    messageLabel = Label(messageFrame, text=message,  bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor)
+    messageLabel.pack()
+
+
+def creationSuperFrameSecret():
+    global superFrameSecret
+    superFrameSecret = Frame(mainFenetre, bg = bgColor)
+    superFrameSecret.pack(side=BOTTOM, fill=X)
+
+def creationSecretFrame():
+    # Creation de la frame mot secret -----
+    global secretFrame, secret
+    secretFrame = Frame(superFrameSecret, bg = bgColor)
+    secretLabel = Label(secretFrame, text = secret, bg = bgColor, fg= fgColor, activebackground = bgColor, activeforeground = fgColor)
+    secretLabel.pack()
+    secretFrame.pack(side = BOTTOM, pady=20)
+
+def creationSuperFrameImage():
+    global superFrameImage
+    superFrameImage = Frame(mainFenetre, bg = bgColor)
+    superFrameImage.pack(side=BOTTOM, fill=BOTH, expand=True)
+
+def creationFrameImage():
+    global frameImage
+    frameImage = Frame(superFrameImage, bg = bgColor)
+    frameImage.pack()
+    # Création et plug de l'image dans la Frame Image
+    im = Image.open(f"pendu0{pénalité}.png")
+    im = im.resize((250, 250))
+    photo = ImageTk.PhotoImage(im, master = frameImage)
+    labelPhoto = Label(frameImage)
+    labelPhoto.img=photo
+    labelPhoto.config(image = labelPhoto.img)
+    labelPhoto.pack(pady=50)
+
+
+
+
+
+def updateClavier():
+    global clavierFrame, messageFrame, secretFrame
+    clavierFrame.destroy()
+    creationClavier()
+    clavierFrame.pack(side = BOTTOM, pady=20)
+
+
+def updateMotMystere():
+    global secretFrame, secret
+    secretFrame.destroy()
+    secretFrame = Frame(superFrameSecret, bg = bgColor)
+    secretLabel = Label(secretFrame, text = secret, bg = bgColor)
+    secretLabel.pack()
+    secretFrame.pack(side = BOTTOM, pady=20)
+
+
+def updateMessage():
+    global message, messageFrame
+    messageFrame.destroy()
+    messageFrame = Frame(superFrameMessage, bg = bgColor)
+    messageFrame.pack(side=BOTTOM)
+    messageLabel = Label(messageFrame, text=message,  bg = bgColor)
+    messageLabel.pack()
+
+
+def updateImage():
+    global frameImage
+    frameImage.destroy()
+    creationFrameImage()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------------------
 ## ----- Lancement de la fonction jeu -----
+
 pendu()
