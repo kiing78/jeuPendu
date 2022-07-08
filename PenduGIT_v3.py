@@ -13,7 +13,7 @@ import random
 from tkinter import *
 from functools import partial
 import psycopg2
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageSequence
 
 pénalité = 0
 messageErreur = ""
@@ -111,6 +111,8 @@ def chercheLettre(n):
         victoire()
         secretFrame.destroy()
         creationSecretFrame()
+        if gagné == True:
+            updateImage()
 
 
 def rejouer():
@@ -568,14 +570,27 @@ def creationFrameImage():
     frameImage = Frame(superFrameImage, bg = bgColor)
     frameImage.pack()
     # Création et plug de l'image dans la Frame Image
-    im = Image.open(f"image{pénalité}.png")
-    im = im.resize((250, 250))
-    photo = ImageTk.PhotoImage(im, master = frameImage)
-    labelPhoto = Label(frameImage)
-    labelPhoto.img=photo
-    labelPhoto.config(image = labelPhoto.img)
-    labelPhoto.pack(pady=50)
 
+
+    if gagné == True:
+        img5 = 'fireworks.gif'
+        labelPhoto = Label(frameImage)
+        labelPhoto.pack(pady=50)
+        for img5 in ImageSequence.Iterator(img5):
+            img5=ImageTk.PhotoImage(img5)
+            for speed in range(1000):
+                labelPhoto.config(image=img5)
+            labelPhoto.update()
+
+    else:
+        im = Image.open(f"image{pénalité}.png")
+        print('gagné : ', gagné)
+        im = im.resize((250, 250))
+        photo = ImageTk.PhotoImage(im, master = frameImage)
+        labelPhoto = Label(frameImage)
+        labelPhoto.img=photo
+        labelPhoto.config(image = labelPhoto.img)
+        labelPhoto.pack(pady=50)
 
 
 
