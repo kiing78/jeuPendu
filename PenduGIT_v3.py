@@ -11,9 +11,11 @@
 
 import random
 from tkinter import *
+from tkinter import messagebox
 from functools import partial
 import psycopg2
 from PIL import Image, ImageTk, ImageSequence
+import threading
 
 pénalité = 0
 messageErreur = ""
@@ -26,8 +28,8 @@ lost = False
 theme = ""
 dataMot = []
 message = ""
-databaseUsername= "emmanuel"
-databaseMdp= "Tournevis@00"
+databaseUsername= "sebastien"
+databaseMdp= "root"
 bgColor = "#dedede"
 fgColor = "Black"
 gagné = False
@@ -44,6 +46,7 @@ def pendu():
     creationFrameImageAccueil()
     creationBoutonReglesFrame()
     creationBoutonStartFrame()
+    center(mainFenetre)
     mainFenetre.mainloop()
 
 def victoire():
@@ -94,25 +97,27 @@ def verifLettreValid(event):
 def chercheLettre(n):
     ## Vérifie si la lettre renseignée est dans le mot, l'ajoute dans le tableau de lettres proposées incrémmente le compteur de pénalité le cas échéant
     global pénalité, lettresProposées, secret, secretFrame, message
-    lettre=n
-    message = ""
-    pénalité = pénalité
-    updateMessage()
-    # Vérifie les erreurs de proposition de lettre
-    letterIsInclude = lettre in word
-    lettresProposées.append(lettre)
-    updateClavier()
-    if (not letterIsInclude):
-        pénalité = pénalité + 1
-        defaite()
-        updateImage()
-    else:
-        secret = afficheMotSecret()
-        victoire()
-        secretFrame.destroy()
-        creationSecretFrame()
-        if gagné == True:
+    if gagné == False and perdu == False:
+        lettre=n
+        message = ""
+        pénalité = pénalité
+        updateMessage()
+        # Vérifie les erreurs de proposition de lettre
+        letterIsInclude = lettre in word
+        lettresProposées.append(lettre)
+        updateClavier()
+        if (not letterIsInclude):
+            pénalité = pénalité + 1
+            defaite()
             updateImage()
+        else:
+            secret = afficheMotSecret()
+            victoire()
+            secretFrame.destroy()
+            creationSecretFrame()
+            if gagné == True:
+                updateImage()
+
 
 
 def rejouer():
@@ -146,6 +151,7 @@ def menu():
     superFrameClavier.destroy()
     superFrameBoutons.destroy()
     superFrameImage.destroy()
+    creationBoutonRetourAccueilFrame()
     creationThemeFrame()
     chercheThemeDansDatabase()
     afficheTheme()
@@ -214,7 +220,7 @@ def creationBoutonReglesFrame():
     global mainFenetre, boutonReglesFrame
     boutonReglesFrame = Frame (mainFenetre, bg = bgColor)
     boutonReglesFrame.pack(pady=20)
-    boutonRegles = Button(boutonReglesFrame, text="REGLES", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor)
+    boutonRegles = Button(boutonReglesFrame, text="REGLES", bg = bgColor, fg = fgColor, activebackground = bgColor, activeforeground = fgColor, command = afficherRegle)
     boutonRegles.pack()
 
 
@@ -355,7 +361,7 @@ def goToAccueil():
     except:
         pass
     creationSuperFrameImage("top")
-    creationFrameImage()
+    creationFrameImageAccueil()
     creationBoutonReglesFrame()
     creationBoutonStartFrame()
 
@@ -369,7 +375,7 @@ def creationBoutonRetourAccueilFrame():
     boutonRetourAccueilFrame = Frame (mainFenetre, bg = bgColor)
     boutonRetourAccueilFrame.pack( fill=BOTH, side=TOP, pady=10, padx=10)
 
-    im = Image.open(r"D:\Manu\FORMATIONS\PYTHON\PENDU\penduGIT\jeuPendu\return.png")
+    im = Image.open("return.png")
     #im.show()
     im = im.resize((30,30), Image.ANTIALIAS)
     fleche = ImageTk.PhotoImage(im)
@@ -573,7 +579,7 @@ def creationFrameImage():
 
 
     if gagné == True:
-        img5 = 'fireworks.gif'
+        img5 = Image.open("fireworks.gif")
         labelPhoto = Label(frameImage)
         labelPhoto.pack(pady=50)
         for img5 in ImageSequence.Iterator(img5):
@@ -581,6 +587,14 @@ def creationFrameImage():
             for speed in range(1000):
                 labelPhoto.config(image=img5)
             labelPhoto.update()
+        labelPhoto.destroy()
+        im = Image.open("lependu.png")
+        im = im.resize((250, 250))
+        photo = ImageTk.PhotoImage(im, master = frameImage)
+        labelPhoto = Label(frameImage)
+        labelPhoto.img=photo
+        labelPhoto.config(image = labelPhoto.img)
+        labelPhoto.pack(pady=50)
 
     else:
         im = Image.open(f"image{pénalité}.png")
@@ -591,8 +605,6 @@ def creationFrameImage():
         labelPhoto.img=photo
         labelPhoto.config(image = labelPhoto.img)
         labelPhoto.pack(pady=50)
-
-
 
 
 def updateClavier():
@@ -625,8 +637,29 @@ def updateImage():
     frameImage.destroy()
     creationFrameImage()
 
+def afficherRegle():
+    """affiche les regles du jeu en pop up """
+    phrase= "Règles du jeu L’objectif du pendu est de retrouver un mot “mystère” en découvrant ses lettres.\n\n Déroulement : \n\n→ Les lettres du mot “mystère” s’affichent à l’écran sous forme de _ ou autre symbole -Le joueur sélectionne des lettres 1 à 1 \n\n→Si la lettre est contenue dans le mot, elle apparaît dans le mot mystère à chaque position où elle est présente, elle se bloque pour ne pas être ré-utilisée \n\n→Si la lettre n’est pas contenue dans le mot On compte une pénalité, elle se bloque pour ne pas être ré-utilisée \n\n→La partie se termine si je joueur atteint xx pénalités ou s’il découvre le mot mystère"
+    messagebox.showinfo("Regle du jeu",phrase)
 
 
+def center(win):
+    '''code permetaatn de centrer la fenêtre quand on la lance'''
+    """
+    centers a tkinter window
+    :param win: the main window or Toplevel window to center
+    """
+    win.update_idletasks()
+    width = win.winfo_width()
+    frm_width = win.winfo_rootx() - win.winfo_x()
+    win_width = width + 2 * frm_width
+    height = win.winfo_height()
+    titlebar_height = win.winfo_rooty() - win.winfo_y()
+    win_height = height + titlebar_height + frm_width
+    x = win.winfo_screenwidth() // 2 - win_width // 2
+    y = win.winfo_screenheight() // 2 - win_height // 2
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    win.deiconify()
 
 '''
 
